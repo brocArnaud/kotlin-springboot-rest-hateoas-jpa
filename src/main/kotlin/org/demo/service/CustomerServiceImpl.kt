@@ -1,5 +1,6 @@
 package org.demo.service
 
+import org.demo.controller.criteria.CustomerCriteria
 import org.demo.entity.Customer
 import org.demo.repository.CustomerRepository
 import org.springframework.data.domain.Page
@@ -25,10 +26,10 @@ class CustomerServiceImpl(val customerRepository: CustomerRepository) : Customer
 	}
 
 
-	override fun search(pageable: Pageable): Page<Customer> {
-//		var spec: Specification<Customer> = CustomerSpecification(CustomerResource())
+	override fun search(pageable: Pageable, criteria: CustomerCriteria): Page<Customer> {
+		var spec: Specification<Customer> = CustomerSpecification(criteria)
 //		spec,
-		var customers: Page<Customer> = customerRepository.findAll( pageable)
+		var customers: Page<Customer> = customerRepository.findAll(spec, pageable)
 		return customers
 	}
 
@@ -59,11 +60,11 @@ class CustomerServiceImpl(val customerRepository: CustomerRepository) : Customer
 		customerRepository.save(Customer("ccD", "lil12"))
 	}
 
-	class CustomerSpecification(val criteria: CustomerResource) : Specification<Customer> {
+	class CustomerSpecification(val criteria: CustomerCriteria) : Specification<Customer> {
 
 		override fun toPredicate(root: Root<Customer>, query: CriteriaQuery<*>, builder: CriteriaBuilder): Predicate {
 			var predicates: MutableList<Predicate> = mutableListOf<Predicate>()
-			if (StringUtils.isNotBlank(criteria.firstName)) predicates.add(builder.like(builder.lower(root.get("firstName")), criteria.firstName.toLowerCase() + "%"));
+			if (StringUtils.isNotBlank(criteria.firstName)) predicates.add(builder.like(builder.lower(root.get("firstName")), criteria.firstName?.toLowerCase() + "%"));
 
 			return andTogether(predicates, builder)
 		}
