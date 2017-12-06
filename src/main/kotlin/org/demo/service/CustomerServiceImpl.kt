@@ -1,5 +1,6 @@
 package org.demo.service
 
+import org.apache.commons.lang3.StringUtils
 import org.demo.controller.criteria.CustomerCriteria
 import org.demo.entity.Customer
 import org.demo.repository.CustomerRepository
@@ -7,42 +8,46 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
+import java.util.Optional
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
 import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
-import org.apache.commons.lang3.StringUtils
-import org.demo.controller.resources.CustomerResource
 
 @Service
 class CustomerServiceImpl(val customerRepository: CustomerRepository) : CustomerService {
 
-	override fun search(): List<Customer> {
-		return customerRepository.findAll()
+	override fun get(id: Long): Optional<Customer> {
+		return customerRepository.findById(id)
 	}
-
-	override fun get(id: Long): Customer {
-		return customerRepository.getOne(id)
-	}
-
 
 	override fun search(pageable: Pageable, criteria: CustomerCriteria): Page<Customer> {
-		var spec: Specification<Customer> = CustomerSpecification(criteria)
-//		spec,
-		var customers: Page<Customer> = customerRepository.findAll(spec, pageable)
-		return customers
+		return customerRepository.findAll(CustomerSpecification(criteria), pageable)
 	}
 
-	override fun delete(id: Long) {
-		return customerRepository.deleteById(id)
+	override fun delete(id: Long): Boolean {
+		if (customerRepository.findById(id) != null) {
+			customerRepository.deleteById(id)
+			return true;
+		}
+		return false;
 	}
 
 	override fun create(customer: Customer): Customer {
 		return customerRepository.save(customer)
 	}
 
-	override fun save(customer: Customer): Customer {
-		return customerRepository.save(customer)
+	override fun save(customer: Customer): Boolean {
+		var pk: Long = customer.id;
+		if (customerRepository.findById(pk) != null) {
+			customerRepository.save(customer);
+			return true;
+		}
+		return false;
+	}
+
+	override fun exist(customer: Customer): Boolean {
+		return customerRepository.existsById(customer.id)
 	}
 
 	override fun init() {
@@ -65,7 +70,7 @@ class CustomerServiceImpl(val customerRepository: CustomerRepository) : Customer
 		override fun toPredicate(root: Root<Customer>, query: CriteriaQuery<*>, builder: CriteriaBuilder): Predicate {
 			var predicates: MutableList<Predicate> = mutableListOf<Predicate>()
 			if (StringUtils.isNotBlank(criteria.firstName)) predicates.add(builder.like(builder.lower(root.get("firstName")), criteria.firstName?.toLowerCase() + "%"));
-
+			if (StringUtils.isNotBlank(criteria.lastName)) predicates.add(builder.like(builder.lower(root.get("lastName")), criteria.lastName?.toLowerCase() + "%"));
 			return andTogether(predicates, builder)
 		}
 
